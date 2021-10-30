@@ -112,6 +112,15 @@ namespace vr {
 		x = 0.5f * (1.f + (right + left - 2*canted) / (left - right));
 		y = 0.5f * (1.f + (bottom + top) / (top - bottom));
 		Log() << "Projection center for eye " << eye << ": " << x << ", " << y << "\n";
+
+		float offsetX = Config::Instance().offsetX;
+		float offsetY = Config::Instance().offsetY;
+
+		if (offsetX != 1.0 || offsetY != 1.0) {
+			x = offsetX * x;
+			y = offsetY * y;
+			Log() << "Modified projection center for eye " << eye << ": " << x << ", " << y << "\n";
+		}
 	}
 
 	void PostProcessor::Apply(EVREye eEye, const Texture_t *pTexture, const VRTextureBounds_t* pBounds, EVRSubmitFlags nSubmitFlags) {

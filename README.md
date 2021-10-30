@@ -1,6 +1,8 @@
 Modified OpenVR DLL with AMD FidelityFX SuperResolution Upscaler
 ---
 
+**This fork allows you to move the sweet spot via offset variables.**
+
 This modified openvr_api.dll allows you to apply [FidelityFX SuperResolution](https://gpuopen.com/fidelityfx-superresolution/)
 upscaling to many SteamVR games, as long as they use D3D11.
 
