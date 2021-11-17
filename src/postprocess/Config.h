@@ -11,9 +11,10 @@ struct Config {
 	float renderScale = 1.f;
 	float sharpness = 0.75f;
 	float radius = 0.5f;
-	bool debugMode = false;
 	float offsetX = 1.f;
 	float offsetY = 1.f;
+	bool debugMode = false;
+	bool useNis = false;
 
 	static Config Load() {
 		Config config;
@@ -29,9 +30,10 @@ struct Config {
 				config.renderScale = fsr.get("renderScale", 1.0).asFloat();
 				config.applyMIPBias = fsr.get("applyMIPBias", true).asBool();
 				config.radius = fsr.get("radius", 0.5).asFloat();
-				config.debugMode = fsr.get("debugMode", false).asBool();
 				config.offsetX = fsr.get("offsetX", 1.0).asFloat();
 				config.offsetY = fsr.get("offsetY", 1.0).asFloat();
+				config.debugMode = fsr.get("debugMode", false).asBool();
+				config.useNis = fsr.get("useNIS", false).asBool();
 			}
 		} catch (...) {
 			Log() << "Could not read config file.\n";
