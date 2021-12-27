@@ -3,9 +3,11 @@
 #define no_init_all deprecated
 #include <d3d11.h>
 #include <wrl/client.h>
+
 #define A_CPU
 #include "fsr/ffx_a.h"
 #include "fsr/ffx_fsr1.h"
+
 #include "nis/NIS_Config.h"
 #include "Config.h"
 #include "shader_fsr_easu.h"
@@ -13,6 +15,7 @@
 #include "shader_nis_upscale.h"
 #include "shader_nis_sharpen.h"
 #include "VrHooks.h"
+#include "postprocess/ScreenGrab11.h"
 
 using Microsoft::WRL::ComPtr;
 
@@ -632,5 +635,92 @@ namespace vr {
 				}
 			}
 		}
+
+		if (Config::Instance().hotkeysEnabled) {
+			CheckHotkeys();
+		}
+
+		if (takeCapture && eEye == Eye_Left) {
+			SaveTextureToFile(outputTexture);
+			takeCapture = false;
+		}
+	}
+
+	void PostProcessor::SaveTextureToFile( ID3D11Texture2D *texture ) {
+		static char timeBuf[16];
+		std::time_t now = std::time(nullptr);
+		std::strftime(timeBuf, sizeof(timeBuf), "%Y%m%d_%H%M%S", std::localtime(&now));
+
+		std::wostringstream filename;
+		filename << GetDllPath() << "\\"
+				 << "capture_" << timeBuf
+				 << "_" << (Config::Instance().useNis ? "nis" : "fsr")
+				 << "_s" << int(roundf(Config::Instance().sharpness * 100))
+				 << "_r" << int(roundf(Config::Instance().radius * 100))
+				 << ".dds";
+
+		HRESULT result = DirectX::SaveDDSTextureToFile( context.Get(), texture, filename.str().c_str() );
+		if (FAILED(result)) {
+			Log() << "Error taking screen capture: " << std::hex << result << std::dec << std::endl;
+		}
+	}
+
+	void PostProcessor::CheckHotkeys() {
+		bool isShiftPressed = GetAsyncKeyState( VK_LSHIFT ) || GetAsyncKeyState( VK_RSHIFT );
+		if (!isShiftPressed && Config::Instance().hotkeysRequireShift)
+			return;
+		bool isCtrlPressed = GetAsyncKeyState( VK_LCONTROL ) || GetAsyncKeyState( VK_RCONTROL );
+		if (!isCtrlPressed && Config::Instance().hotkeysRequireCtrl)
+			return;
+		bool isAltPressed = GetAsyncKeyState( VK_LMENU ) || GetAsyncKeyState( VK_RMENU );
+		if (!isAltPressed && Config::Instance().hotkeysRequireAlt)
+			return;
+
+		if (IsHotkeyActive( Config::Instance().hotkeyToggleUseNis )) {
+			Config::Instance().useNis = !Config::Instance().useNis;
+			Log() << "Now using " << (Config::Instance().useNis ? "NIS" : "FSR") << std::endl;
+			Reset();
+		}
+
+		if (IsHotkeyActive( Config::Instance().hotkeyToggleDebugMode )) {
+			Config::Instance().debugMode = !Config::Instance().debugMode;
+			Log() << "Debug mode is now " << (Config::Instance().debugMode ? "enabled" : "disabled") << std::endl;
+			Reset();
+		}
+
+		if (IsHotkeyActive( Config::Instance().hotkeyDecreaseSharpness )) {
+			Config::Instance().sharpness = max(Config::Instance().sharpness - 0.05f, 0.0f);
+			Log() << "Sharpness is now at " << Config::Instance().sharpness << std::endl;
+			Reset();
+		}
+
+		if (IsHotkeyActive( Config::Instance().hotkeyIncreaseSharpness )) {
+			Config::Instance().sharpness += 0.05f;
+			Log() << "Sharpness is now at " << Config::Instance().sharpness << std::endl;
+			Reset();
+		}
+
+		if (IsHotkeyActive( Config::Instance().hotkeyDecreaseRadius )) {
+			Config::Instance().radius = max(Config::Instance().radius - 0.05f, 0.0f);
+			Log() << "Sharpening radius is now at " << Config::Instance().radius << std::endl;
+			Reset();
+		}
+
+		if (IsHotkeyActive( Config::Instance().hotkeyIncreaseRadius )) {
+			Config::Instance().radius += 0.05f;
+			Log() << "Sharpening radius is now at " << Config::Instance().radius << std::endl;
+			Reset();
+		}
+
+		if (IsHotkeyActive( Config::Instance().hotkeyCaptureOutput )) {
+			takeCapture = true;
+		}
+	}
+
+	bool PostProcessor::IsHotkeyActive( int keyCode ) {
+		bool isPressedNow = GetAsyncKeyState( keyCode );
+		bool isNewlyPressed = !wasKeyPressedBefore[keyCode] && isPressedNow;
+		wasKeyPressedBefore[keyCode] = isPressedNow;
+		return isNewlyPressed;
 	}
 }

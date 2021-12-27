@@ -67,6 +67,7 @@ namespace vr {
 
 		void PrepareResources(ID3D11Texture2D *inputTexture, EColorSpace colorSpace);
 		void ApplyPostProcess(EVREye eEye, ID3D11Texture2D *inputTexture);
+		void SaveTextureToFile( ID3D11Texture2D *texture );
 
 		struct ProfileQuery {
 			ComPtr<ID3D11Query> queryDisjoint;
@@ -79,5 +80,11 @@ namespace vr {
 		int currentQuery = 0;
 		float summedGpuTime = 0.0f;
 		int countedQueries = 0;
+
+		void CheckHotkeys();
+		bool IsHotkeyActive(int keyCode);
+
+		std::unordered_map<int, bool> wasKeyPressedBefore;
+		bool takeCapture = false;
 	};
 }
